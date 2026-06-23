@@ -18,6 +18,9 @@ servers:
   - url: https://staging.holydoit.com/api/v0/integrations/supplier-api
     description: Test server
 
+  - url: https://engine.holydoit.com/api/v0/integrations/supplier-api
+    description: Production server
+
 
 paths:
   /partners:
