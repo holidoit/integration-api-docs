@@ -282,9 +282,9 @@ paths:
     get:
       tags:
         - Integration
-      summary: Search confirmed bookings
+      summary: Search pending and confirmed bookings
       description: >
-        Search and filter confirmed bookings by date range,
+        Search and filter pending and confirmed bookings by date range,
         product, partner, option, or supplier references (AND).  
         
         If date range is not provided, the next 30 days are used by default.
@@ -428,6 +428,69 @@ paths:
           description: Authentication credentials were not provided or invalid.
         '403':
           description: Permission denied.
+
+  /bookings/{supplierReference}/pending:
+    post:
+      tags:
+        - Integration
+      summary: Move a booking to pending
+      description: >
+        Moves a previously reserved booking identified by its `supplierReference`
+        to **PENDING**.
+
+        This endpoint stores the customer's contact information, booking amount,
+        and optional notes, then triggers the partner booking request workflows.
+
+        Calling this endpoint for an already pending booking is idempotent and
+        returns the current pending booking details.
+
+        **Authentication required:** Basic Auth
+      operationId: postPendingBooking
+      security:
+        - BasicAuth: [ ]
+      parameters:
+        - name: supplierReference
+          in: path
+          required: true
+          description: The supplier reference returned by the reservation endpoint.
+          schema:
+            type: string
+            example: "HLDABC1234"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmBookingRequest'
+            example:
+              contact:
+                firstName: "John"
+                lastName: "Doe"
+                emailAddress: "john.doe@example.com"
+                phoneNumber: "+39333111222"
+              amount: 150.00
+              notes: "Customer requested window seats"
+      responses:
+        '200':
+          description: Booking moved to pending successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingBookingResponse'
+              example:
+                resellerReference: "FRD-ABC123"
+                supplierReference: "HLD1987654"
+                utcCreatedAt: "2025-06-15T08:00:00Z"
+                utcPendingAt: "2025-06-15T08:05:00Z"
+                status: "PENDING"
+        '400':
+          description: Invalid input data or the booking cannot be moved to pending.
+        '401':
+          description: Authentication credentials were not provided or invalid.
+        '403':
+          description: Permission denied.
+        '404':
+          description: Booking not found.
 
   /bookings/{supplierReference}/confirm:
     post:
@@ -886,6 +949,33 @@ components:
         status:
           type: string
           example: "CONFIRMED"
+
+    PendingBookingResponse:
+      type: object
+      required:
+        - resellerReference
+        - supplierReference
+        - utcCreatedAt
+        - utcPendingAt
+        - status
+      properties:
+        resellerReference:
+          type: string
+          example: "FRD-ABC123"
+        supplierReference:
+          type: string
+          example: "HLD1987654"
+        utcCreatedAt:
+          type: string
+          format: date-time
+          example: "2025-06-15T08:00:00Z"
+        utcPendingAt:
+          type: string
+          format: date-time
+          example: "2025-06-15T08:05:00Z"
+        status:
+          type: string
+          example: "PENDING"
 
     CancelBookingResponse:
       type: object
